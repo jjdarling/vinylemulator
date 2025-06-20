@@ -17,3 +17,9 @@ sendanonymoususagestatistics="yes"
 #then replace "usb" with "usb:072f:2200"
 #(or whatever lsusb outputted for your nfc reader)
 nfc_reader_path="usb"
+
+# Auto Shuffle Control Settings
+# Set to True to enable automatic shuffle for playlists, False otherwise.
+AUTO_SHUFFLE_PLAYLISTS = False
+# Set to True to disable shuffle for albums, False otherwise (will retain current shuffle setting).
+AUTO_DESHUFFLE_ALBUMS = False
