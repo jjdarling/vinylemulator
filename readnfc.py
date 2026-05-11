@@ -24,8 +24,9 @@ def touched(tag):
             print("Read from NFC tag: "+ receivedtext)
 
             servicetype = ""
-            
-            #check if a full HTTP URL read from NFC
+            shuffle_url = None    # Initialize shuffle_url
+
+            # check if a full HTTP URL read from NFC
             if receivedtext_lower.startswith ('http'):
                 servicetype = "completeurl"
                 sonosinstruction = receivedtext
@@ -34,6 +35,13 @@ def touched(tag):
             if receivedtext_lower.startswith ('spotify'):
                 servicetype = "spotify"
                 sonosinstruction = "spotify/now/" + receivedtext
+
+                if "spotify:playlist:" in receivedtext_lower and usersettings.AUTO_SHUFFLE_PLAYLISTS:
+                    shuffle_url = f"{usersettings.sonoshttpaddress}/{sonosroom_local}/shuffle/on"
+                    print("Setting Sonos shuffle ON for Spotify playlist...")
+                elif "spotify:album:" in receivedtext_lower and usersettings.AUTO_DESHUFFLE_ALBUMS:
+                    shuffle_url = f"{usersettings.sonoshttpaddress}/{sonosroom_local}/shuffle/off"
+                    print("Setting Sonos shuffle OFF for Spotify album...")
 
             if receivedtext_lower.startswith ('tunein'):
                 servicetype = "tunein"
@@ -47,13 +55,34 @@ def touched(tag):
                 servicetype = "amazonmusic"
                 sonosinstruction = "amazonmusic/now/" + receivedtext[12:]
 
+                if "playlist/" in receivedtext_lower and usersettings.AUTO_SHUFFLE_PLAYLISTS:
+                    shuffle_url = f"{usersettings.sonoshttpaddress}/{sonosroom_local}/shuffle/on"
+                    print("Determined to set Sonos shuffle ON for Amazon Music playlist...")
+                elif "album/" in receivedtext_lower and usersettings.AUTO_DESHUFFLE_ALBUMS:
+                    shuffle_url = f"{usersettings.sonoshttpaddress}/{sonosroom_local}/shuffle/off"
+                    print("Determined to set Sonos shuffle OFF for Amazon Music album...")
+
             if receivedtext_lower.startswith ('apple:'):
                 servicetype = "applemusic"
                 sonosinstruction = "applemusic/now/" + receivedtext[6:]
 
+                if "playlist/" in receivedtext_lower and usersettings.AUTO_SHUFFLE_PLAYLISTS:
+                    shuffle_url = f"{usersettings.sonoshttpaddress}/{sonosroom_local}/shuffle/on"
+                    print("Determined to set Sonos shuffle ON for Apple Music playlist...")
+                elif "album/" in receivedtext_lower and usersettings.AUTO_DESHUFFLE_ALBUMS:
+                    shuffle_url = f"{usersettings.sonoshttpaddress}/{sonosroom_local}/shuffle/off"
+                    print("Determined to set Sonos shuffle OFF for Apple Music album...")
+
             if receivedtext_lower.startswith ('applemusic:'):
                 servicetype = "applemusic"
                 sonosinstruction = "applemusic/now/" + receivedtext[11:]
+
+                if "playlist/" in receivedtext_lower and usersettings.AUTO_SHUFFLE_PLAYLISTS:
+                    shuffle_url = f"{usersettings.sonoshttpaddress}/{sonosroom_local}/shuffle/on"
+                    print("Determined to set Sonos shuffle ON for Apple Music playlist...")
+                elif "album/" in receivedtext_lower and usersettings.AUTO_DESHUFFLE_ALBUMS:
+                    shuffle_url = f"{usersettings.sonoshttpaddress}/{sonosroom_local}/shuffle/off"
+                    print("Determined to set Sonos shuffle OFF for Apple Music album...")
 
             if receivedtext_lower.startswith ('bbcsounds:'):
                 servicetype = "bbcsounds"
@@ -78,6 +107,20 @@ def touched(tag):
                 return True
             
             print ("Detected " + servicetype + " service request")
+
+            # --- CONSOLIDATED SHUFFLE CALL ---
+            if shuffle_url:
+                try:
+                    r_shuffle = requests.get(shuffle_url)
+                    if r_shuffle.status_code == 200:
+                        print(f"Sonos API reports shuffle status: {r_shuffle.json().get('status', 'Unknown')}")
+                    else:
+                        print(f"Error setting shuffle via Sonos API: Status {r_shuffle.status_code}, Response: {r_shuffle.text}")
+                except requests.exceptions.ConnectionError as e:
+                    print(f"Could not connect to Sonos API to set shuffle: {e}")
+                except Exception as e:
+                    print(f"An unexpected error occurred while setting shuffle: {e}")
+            # --- END CONSOLIDATED SHUFFLE CALL ---
 
             #build the URL we want to request
             if servicetype.lower() == 'completeurl':
